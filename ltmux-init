@@ -1,0 +1,41 @@
+#!/bin/bash
+
+devdir=$HOME/src
+
+if tmux list-sessions | grep dev; then
+    if tmux list-session | grep dev-0; then
+        if tmux list-session | grep dev-1; then
+            tmux attach -t dev
+            exit 0
+        else
+            sess=dev-1
+            window=docs
+        fi
+    else
+        sess=dev-0
+        window=test
+    fi
+
+    tmux new-session -d -t dev -s $sess
+    tmux select-window -t $sess:$window
+    tmux attach        -t $sess
+
+else
+    tmux new-session -d -c $devdir -n edit -s dev
+    tmux new-window  -t dev:1  -n test
+    tmux new-window  -t dev:2  -n docs
+
+    tmux set-window-option -g aggressive-resize
+
+    tmux split-window -t dev:test.0
+
+    tmux send-keys -t dev:edit.0 "emacs -nw ." Enter
+
+    tmux send-keys -t dev:test.0 "reset && lbanner Compile" Enter
+    tmux send-keys -t dev:test.1 "reset && lbanner Run"     Enter
+    tmux send-keys -t dev:docs.0 "reset && lbanner Docs"    Enter
+
+    tmux select-window -t dev:edit
+
+    tmux attach -t dev
+fi 
