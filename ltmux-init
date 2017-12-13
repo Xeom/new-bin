@@ -7,56 +7,48 @@ devdir=$HOME/src
 # will open a grouped session to the documentation window, and further
 # invocations will attach to the main development session
 
-if tmux list-sessions | grep dev; then
-    if tmux list-session | grep dev-0; then
-        if tmux list-session | grep dev-1; then
-            # If we have created all our sessions, attach to dev.
-            tmux attach -t dev
-            exit 0
-        else
-            # If only the first grouped session is created, make the second
-            sess=dev-1
-            window=docs
-        fi
-    else
-        # If no grouped sessions are created, make the first
-        sess=dev-0
-        window=test
-    fi
-
-    # Make the new grouped session
-    tmux new-session -d -t dev -s $sess
-    # Switch it to the appropriate window
-    tmux select-window -t $sess:$window
-    # Attach to it
-    tmux attach        -t $sess
-
+if tmux list-sessions -F "#S" | grep '^dev$'; then
+    echo
+    
 else
     # If there are no development sessions.
 
     # Create our session with the windows edit, test and docs
     tmux new-session -d -c $devdir -n edit -s dev
-    tmux new-window  -t dev:1  -n test
-    tmux new-window  -t dev:2  -n docs
-
-    # Set aggressive resize on so that our different grouped sessions can
-    # be different sizes.
-    tmux set-window-option -g aggressive-resize
+    tmux new-window  -c $devdir -t dev:1 -n test
+    tmux new-window  -c $devdir -t dev:2  -n docs
 
     # Split the test window into a compiling and running window.
-    tmux split-window -t dev:test.0
+    tmux split-window -c $devdir -t dev:test.0
 
     # Open emacs in the editing window
     tmux send-keys -t dev:edit.0 "emacs -nw ." Enter
 
     # Use lbanner to label all the other windows
-    tmux send-keys -t dev:test.0 "reset && lbanner Compile" Enter
-    tmux send-keys -t dev:test.1 "reset && lbanner Run"     Enter
-    tmux send-keys -t dev:docs.0 "reset && lbanner Docs"    Enter
+    tmux send-keys -t dev:test.0 "lbanner Compile" Enter
+    tmux send-keys -t dev:test.1 "lbanner Run"     Enter
+    tmux send-keys -t dev:docs.0 "lbanner Docs"    Enter
 
     # Select the editing window with our session
     tmux select-window -t dev:edit
+fi 
 
-    # Attach
-    tmux attach -t dev
+texdir=$HOME/doc/tex
+
+if tmux list-sessions -F "#S" | grep '^tex$'; then
+    echo
+else
+    # If there are no development sessions.
+    # Create our session with the windows edit, test and docs
+    tmux new-session -d -c $texdir -n edit -s tex
+    tmux new-window     -c $texdir -t tex:1 -n compile
+
+    # Open emacs in the editing window
+    tmux send-keys -t tex:edit.0 "emacs -nw ." Enter
+
+    # Use lbanner to label all the other windows
+    tmux send-keys -t tex:compile.0 "lbanner compile; ltex-compile" Enter
+ 
+    # Select the editing window with our session
+    tmux select-window -t tex:edit
 fi 
