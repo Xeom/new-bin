@@ -1,0 +1,23 @@
+#!/bin/bash
+
+texdir=$HOME/doc/tex
+pdfdir=$HOME/doc/pdf/of-tex
+viewer=0
+
+file=$1
+[[ -z $file ]] && read -p "What are we writing today? " file
+
+compilecmd="latexmk -pdf -view=none -pvc -halt-on-error -bibtex -outdir=$pdfdir/$(dirname $file) $texdir/$file.tex"
+
+unbuffer $compilecmd | tee /dev/fd/2 | grep --line-buffer "===" | while read -r line; do
+	echo -e "\033[1;32mFinished\033[0m"
+	if [[ $viewer -eq 0 && -f $pdfdir/$file.pdf ]]; then
+	    xpdf -remote ltex-compile $pdfdir/$file.pdf &
+            viewer=$!
+	elif [[ $viewer -ne 0 ]]; then
+            echo "UPDATE TIME $viewer"
+            trap "kill $viewer" EXIT
+	    xpdf -remote ltex-compile -reload &>/dev/null
+	fi
+    done
+
