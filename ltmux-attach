@@ -1,0 +1,27 @@
+#!/bin/bash
+
+
+group=workspace
+[[ -z $1 ]] || group=$1
+
+if [[ -z $2 ]]; then
+    unused=$(comm -2 -3 \
+	     <(tmux list-windows -F"#I") \
+	     <(tmux list-clients -F"#S #I" | grep "^$group-l" | cut -d" " -f2))
+
+    window=0
+    [[ -z $unused ]] || window=$(echo $unused | cut -d" " -f1) 
+else
+    window=$2
+fi
+
+echo $window $unused
+
+sess=$group-l$$
+
+trap "tmux kill-session -t $sess" EXIT
+
+tmux new-session -d -t $group -s $sess
+tmux select-window  -t $sess:$window
+tmux set-window-option -g aggressive-resize 1
+tmux attach         -t $sess
