@@ -1,0 +1,20 @@
+#!/bin/bash
+
+google-chrome-stable &
+ltmux-init
+
+while read -r msg; do
+    i3-msg "$msg"
+    sleep 0.3
+done <<< \
+"workspace development
+split horizontal
+exec $HOME/ltmux
+exec st -e bash $HOME/bin/ltmux-attach dev edit
+exec st -e bash $HOME/bin/ltmux-attach dev test
+split vertical
+exec st -e bash $HOME/bin/ltmux-attach dev docs
+workspace writing
+split horizontal
+exec st -e bash $HOME/bin/ltmux-attach tex edit
+exec st -e bash $HOME/bin/ltmux-attach tex compile"
